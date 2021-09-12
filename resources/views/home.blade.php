@@ -32,7 +32,7 @@
             <div class="card">
                 <div class="card-header">{{ __('Conversation') }}</div>
 
-                <div class="card-body">
+                <div class="card-body" id="load_conversation">
                     <div class="chat-container">
                         @forelse ($chats as $index=>$chat)
                            @if ($chat->sender_id == Auth::user()->id)
@@ -50,13 +50,16 @@
 
         <div class="col-md-8">
             <div class="card message-container">
-                <form action="{{ url('save-chat') }}" method="POST">
+                <form action="{{ url('save-chat') }}" method="POST" id="chat_form">
                     @csrf
                     <div class="form-group">
                         <label for="message">Write Message</label>
-                        <textarea name="message" cols="30" rows="10" class="form-control"></textarea>
+                        <textarea name="message" cols="30" rows="10" id="chat_textarea" class="form-control"></textarea>
                     </div>
-                    <button class="btn btn-primary float-right">Send Message</button>
+                    <button type="button" class="btn btn-primary float-right" id="send_message_to_user">
+                        <img class="load_image" src="{{asset('image/pageloader.gif')}}" style="width:20px;height:20px;display:none;" alt="">&nbsp;
+                        Send Message
+                    </button>
                 </form>
             </div>
         </div>
@@ -111,11 +114,48 @@
         retrieveToken();
     });
 
+    $("#send_message_to_user").click(function() {
+        alert('hello');
+    });
+
     messaging.onMessage((payload)=> {
         console.log('Message Recieved');
         console.log(payload);
-        location.reload();
+        //location.reload();
+        $.ajax({
+            url: "{{url('/load/conversation')}}",
+            method: 'get',
+            data: {
+                conversation: "new_conversation",
+            },
+            success: function(response) {
+                $("#load_conversation").html(response.data_generate);
+            }
+        });
     });
 
+</script>
+<script>
+    $(document).ready(function () {
+        $("#send_message_to_user").click(function() {
+            $('.load_image').show();
+            $("#send_message_to_user").attr("disabled", true);
+            $.ajax({
+                type: "POST"
+                , url: $('#chat_form').attr('action')
+                , data: $('#chat_form').serialize()
+                , dataType: "json"
+                , success: function(data) {
+                    $("#load_conversation").html(data.data_generate);
+                    $('.load_image').hide();
+                    $("#send_message_to_user").attr("disabled", false);
+                    $("#chat_textarea").val('');
+                }
+            }).fail(function(data) {
+                var errors = data.responseJSON;
+                console.log(errors);
+            });
+        });
+    });
 </script>
 @endsection

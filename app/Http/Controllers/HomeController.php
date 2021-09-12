@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Chat;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use LaravelFCM\Message\OptionsBuilder;
 use LaravelFCM\Message\PayloadDataBuilder;
 use LaravelFCM\Message\PayloadNotificationBuilder;
@@ -47,17 +48,36 @@ class HomeController extends Controller
 
         $this->broadcastMessage(auth()->user()->name, $message);
 
-        $chat->save();
+        if ($chat->save()) {
+            $data_generate = '';
+            $data_generate .= '<div class="chat-container">';
 
-        return redirect()->back();
+            //Get all conversation
+            $chats = Chat::all();
+            //Get all conversation
+
+            if (isset($chats[0])) {
+                foreach ($chats as $chat) {
+                    if ($chat->sender_id == Auth::user()->id) {
+                        $data_generate .= '<p class="chat chat-left"><b>' . $chat->sender_name . '</b><br> ' . $chat->message . '</p>';
+                    } else {
+                        $data_generate .= '<p class="chat chat-right"><b>' . $chat->sender_name . '</b><br> ' . $chat->message . '</p>';
+                    }
+                }
+            } else {
+                $data_generate .= '<p class="text-center text-danger">No Conversation Found!!</p>';
+            }
+            $data_generate .= '</div>';
+        }
+        return response()->json(array('success' => true, 'data_generate' => $data_generate));
     }
 
     private function broadcastMessage($senderName, $message)
     {
         $optionBuilder = new OptionsBuilder();
-        $optionBuilder->setTimeToLive(60*20);
+        $optionBuilder->setTimeToLive(60 * 20);
 
-        $notificationBuilder = new PayloadNotificationBuilder('New Message From'. $senderName);
+        $notificationBuilder = new PayloadNotificationBuilder('New Message From ' . $senderName);
         $notificationBuilder->setBody($message)->setSound('default')->setClickAction('http://127.0.0.1:8000/home');
 
         $dataBuilder = new PayloadDataBuilder();
@@ -75,5 +95,31 @@ class HomeController extends Controller
         $downstreamResponse = FCM::sendTo($tokens, $option, $notification, $data);
 
         $downstreamResponse->numberSuccess();
+    }
+
+    public function loadConversation()
+    {
+        if (isset($_GET['conversation']) == 'new_conversation') {
+            $data_generate = '';
+            $data_generate .= '<div class="chat-container">';
+
+            //Get all conversation
+            $chats = Chat::all();
+            //Get all conversation
+
+            if (isset($chats[0])) {
+                foreach ($chats as $chat) {
+                    if ($chat->sender_id == Auth::user()->id) {
+                        $data_generate .= '<p class="chat chat-left"><b>' . $chat->sender_name . '</b><br> ' . $chat->message . '</p>';
+                    } else {
+                        $data_generate .= '<p class="chat chat-right"><b>' . $chat->sender_name . '</b><br> ' . $chat->message . '</p>';
+                    }
+                }
+            } else {
+                $data_generate .= '<p class="text-center text-danger">No Conversation Found!!</p>';
+            }
+            $data_generate .= '</div>';
+            return response()->json(array('success' => true, 'data_generate' => $data_generate));
+        }
     }
 }

@@ -23,3 +23,5 @@ Auth::routes();
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 Route::post('/save-chat', [App\Http\Controllers\HomeController::class, 'createChat']);
+
+Route::get('/load/conversation', [App\Http\Controllers\HomeController::class, 'loadConversation']);
